@@ -15,6 +15,7 @@ LEFT_HALLEFFECT = 7
 RIGHT_HALLEFFECT = 5
 MOSFET_HBRIDGE_CONTROL = 3   #GPIO 8 is default 3v3
 
+#global count_left, count_right
 count_left = 0   #left
 count_right = 0   #right
 
@@ -38,7 +39,7 @@ def up_count_right(channel): #, reset = False):
 GPIO.add_event_detect(RIGHT_HALLEFFECT, GPIO.RISING,callback = up_count_right)
 GPIO.add_event_detect(LEFT_HALLEFFECT, GPIO.RISING,callback = up_count_left)
 
-radius_tire = 6.1 #cm
+radius_tire = 11.8 / 2 #cm
 circ_tire = 2*pi*radius_tire
 global lat_dist
 lat_dist = circ_tire/60 #cm per motor rotation
@@ -61,20 +62,29 @@ def tick_distance(tick):
     return distance
 
 def reset_distance():
+    global count_right
+    global count_left
     count_right = 0
     count_left = 0
+#    return count_right and count_left
 
 def change_value(x=0):
     if x >100 or x< -100:
         raise ValueError("Value is not between -100 and 100")
     elif x < 0:
-        pwm = round(7.5 + (2.5*(x)/100)*1.65, 2)
-        print ("Backward ", pwm)
+        pwm = round(7.5 + (2.5*(x)/100)*1.3, 2)
+        #print ("Backward ", pwm)
         return pwm
     else:
         pwm = round(7.5 + (2.5*(x)/100), 2)
-        print ("Forward ", pwm)
+        #print ("Forward ", pwm)
         return pwm
+
+def Hard_stop():
+    left.ChangeDutyCycle(7.5)
+    right.ChangeDutyCycle(7.5)
+    GPIO.output(MOSFET_HBRIDGE_CONTROL, GPIO.LOW)
+    sleep(1)
 
 def stop():
     left.ChangeDutyCycle(7.5)
@@ -83,7 +93,7 @@ def stop():
 
 def straight(x = 0):
     pwm = change_value(x)
-    left.ChangeDutyCycle(pwm)
+    left.ChangeDutyCycle(pwm + 0.3) #PWM Not even
     right.ChangeDutyCycle(pwm)
     sleep(.2)
 
@@ -93,6 +103,7 @@ def turn(i= 0,k = 0):
     left.ChangeDutyCycle(pwm_L)
     right.ChangeDutyCycle(pwm_R)
     sleep(.2)
+
 def get_info():
     print ('RIGHT_MOTOR PIN: ',RIGHT_MOTOR, ' at 50 kHz')
     print ('LEFT_MOTOR PIN: ',LEFT_MOTOR,' at 50 kHz')
